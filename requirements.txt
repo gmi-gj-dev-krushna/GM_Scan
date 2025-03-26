@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+pydantic
+motor
+pydantic[email]
+google-auth 
+google-auth-oauthlib 
+google-auth-httplib2 
+requests
+httpx
+PyJWT 
+cryptography
+itsdangerous
+python-dotenv
