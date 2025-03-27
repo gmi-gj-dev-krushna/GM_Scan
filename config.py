@@ -35,6 +35,3 @@ FACEBOOK_REDIRECT_URI = os.getenv("FACEBOOK_REDIRECT_URI")
 # SMTP settings
 SMTP_SERVER = os.getenv("SMTP_SERVER")
 SMTP_PORT = int(os.getenv("SMTP_PORT"))
-
-# Secret Key
-SECRET_KEY = os.getenv("SECRET_KEY", os.urandom(32).hex())

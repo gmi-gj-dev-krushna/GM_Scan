@@ -4,13 +4,23 @@ import smtplib
 import os
 import secrets
 from email.mime.text import MIMEText
-from config import SMTP_SERVER, SMTP_PORT, SECRET_KEY
-from datetime import datetime, timedelta
+from config import SMTP_SERVER, SMTP_PORT
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, Optional
 from fastapi import HTTPException, status, Header
+from dotenv import load_dotenv
 
 # Updated import for PyJWT
 import jwt
+
+load_dotenv()
+
+# Get the secret key from environment variable
+SECRET_KEY = os.getenv('JWT_SECRET_KEY')
+
+# Ensure the secret key is not None
+if not SECRET_KEY:
+    raise ValueError("JWT_SECRET_KEY must be set in the environment variables")
 
 # Function to hash passwords
 def hash_password(password: str) -> str:
@@ -119,7 +129,7 @@ def verify_otp(email: str, otp: str, users_collection) -> bool:
 # Updated function to generate access tokens
 def generate_access_token(user_data: Dict[str, Any], expires_delta: timedelta = None) -> str:
     """
-    Generate a JWT access token
+    Generate a JWT access token with issue time and expiration
     
     :param user_data: Dictionary containing user information
     :param expires_delta: Optional token expiration time
@@ -132,14 +142,21 @@ def generate_access_token(user_data: Dict[str, Any], expires_delta: timedelta = 
     if expires_delta is None:
         expires_delta = timedelta(days=1)
     
-    # Calculate expiration time
-    expire = datetime.utcnow() + expires_delta
-    to_encode.update({"exp": expire})
+    # Get current time in UTC
+    current_time = datetime.now(timezone.utc)
     
-    # Updated generation method for PyJWT
+    # Calculate expiration time
+    expire = current_time + expires_delta
+    
+    # Add standard JWT claims
+    to_encode.update({
+        "iat": current_time,  # Issued At time
+        "exp": expire,        # Expiration time
+    })
+    
+    # Use the secret key from environment variable
     return jwt.encode(payload=to_encode, key=SECRET_KEY, algorithm="HS256")
 
-# Updated verify function for PyJWT
 def verify_access_token(token: str) -> Dict[str, Any]:
     """
     Verify and decode a JWT access token
@@ -148,6 +165,7 @@ def verify_access_token(token: str) -> Dict[str, Any]:
     :return: Decoded token payload
     """
     try:
+        # Use the secret key from environment variable
         return jwt.decode(token, key=SECRET_KEY, algorithms=["HS256"])
     except jwt.ExpiredSignatureError:
         raise ValueError("Token has expired")
